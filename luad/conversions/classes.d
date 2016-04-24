@@ -43,7 +43,8 @@ private void pushMeta(T)(lua_State* L, T obj)
 			member != "toString" && member != "opEquals" && //handle below
 			member != "opCmp") //handle below
 		{
-			static if(__traits(getOverloads, T.init, member).length > 0 && !__traits(isStaticFunction, mixin("T." ~ member)))
+			T init;
+			static if(__traits(getOverloads, /*T.init*/init, member).length > 0 && !__traits(isStaticFunction, mixin("T." ~ member)))
 			{
 				pushMethod!(T, member)(L);
 				lua_setfield(L, -2, toStringz(member));
@@ -115,7 +116,7 @@ template hasCtor(T)
 // TODO: exclude private members (I smell DMD bugs...)
 template isStaticMember(T, string member)
 {
-	static if(__traits(compiles, mixin("&T." ~ member)))
+	static if(__traits(compiles, mixin("T." ~ member)))
 	{
 		static if(is(typeof(mixin("&T.init." ~ member)) == delegate))
 			enum isStaticMember = __traits(isStaticFunction, mixin("T." ~ member));

@@ -251,6 +251,21 @@ void pushFunction(T)(lua_State* L, T func) if (isSomeFunction!T)
 // TODO: optimize for non-virtual functions
 void pushMethod(Class, string member)(lua_State* L) if (isSomeFunction!(__traits(getMember, Class, member)))
 {
+	static if(!__traits(compiles, mixin("&Class.init." ~ member)))
+	{
+	alias typeof(mixin("&(cast(Class)null)." ~ member)) T;
+
+	// Delay vtable lookup until the right time
+	static ReturnType!T virtualWrapper(Class self, ParameterTypeTuple!T args)
+	{
+		return mixin("self." ~ member)(args);
+	}
+
+	lua_pushlightuserdata(L, &virtualWrapper);
+	lua_pushcclosure(L, &methodWrapper!(T, Class, true), 1);
+	}
+	else
+	{
 	alias typeof(mixin("&Class.init." ~ member)) T;
 
 	// Delay vtable lookup until the right time
@@ -261,6 +276,7 @@ void pushMethod(Class, string member)(lua_State* L) if (isSomeFunction!(__traits
 
 	lua_pushlightuserdata(L, &virtualWrapper);
 	lua_pushcclosure(L, &methodWrapper!(T, Class, true), 1);
+	}
 }
 
 /**

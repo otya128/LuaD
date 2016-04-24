@@ -138,6 +138,10 @@ void pushValue(T)(lua_State* L, T value)
 		else
 			pushClassInstance(L, value);
 	}
+	else static if(isPointer!T)
+	{
+			lua_pushlightuserdata(L, value);
+	}
 	else
 		static assert(false, "Unsupported type `" ~ T.stringof ~ "` in stack push operation");
 }
@@ -177,6 +181,9 @@ template luaTypeOf(T)
 
 	else static if(is(T : Object))
 		enum luaTypeOf = LUA_TUSERDATA;
+
+	else static if(isPointer!T)
+		enum luaTypeOf = LUA_TLIGHTUSERDATA;
 
 	else
 		static assert(false, "No Lua type defined for `" ~ T.stringof ~ "`");
@@ -296,6 +303,9 @@ T getValue(T, alias typeMismatchHandler = defaultTypeMismatch)(lua_State* L, int
 
 	else static if(is(T : Object))
 		return getClassInstance!T(L, idx);
+
+	else static if(isPointer!T)
+		return cast(T)lua_topointer(L, idx);
 
 	else
 	{
